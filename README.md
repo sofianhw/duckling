@@ -1,35 +1,104 @@
 ![Duckling Logo](https://github.com/facebook/duckling/raw/main/logo.png)
 
-# Duckling - Past Date Bias Fork
+### Docker
 
-> **Note**: This is a modified fork of [Facebook's Duckling](https://github.com/facebook/duckling) that **prefers past dates over future dates** when parsing ambiguous time expressions.
+For detailed Docker build and deployment instructions, including Indonesian (ID) time parsing support with Asia/Jakarta timezone, see the [Docker Guide](DOCKER_GUIDE.md).
 
-## What's Different?
-
-The original Duckling has a **future bias** - when you parse "Monday", it returns next Monday. This fork reverses that behavior:
-
-- **"Monday"** → Returns **last Monday** (not next Monday)
-- **"Friday"** → Returns **last Friday** (not next Friday)
-- **"March"** → Returns **last March** (not next March)
-- **"next Monday"** → Still returns next Monday (explicit future markers work)
-- **"last Monday"** → Still returns last Monday (explicit past markers work)
-
-### Use Case
-
-This fork is ideal for applications that primarily deal with historical data, logs, retrospectives, or any scenario where users typically refer to past events.
-
-### Docker Image
-
-A pre-built Docker image is available on Docker Hub:
-
+**Quick start:**
 ```bash
-docker pull dafal/duckling-past:latest
-docker run -p 8000:8000 dafal/duckling-past:latest
+# Build with BuildKit (recommended)
+DOCKER_BUILDKIT=1 docker build -t duckling .
+
+# Run the container
+docker run -d -p 8000:8000 --name duckling duckling
 ```
+
+The Docker image includes:
+- **Languages**: English (EN) and Indonesian (ID) only
+- **Timezone**: Asia/Jakarta (WIB, UTC+7) by default
+- **Optimized builds**: BuildKit cache mounts for faster rebuilds
 
 ### Changes Made
 
 The modification is minimal and surgical - only the date resolution logic in `Duckling/Time/Types.hs` was changed to prefer past dates when both past and future candidates exist. See the commit history for details.
+
+### Indonesian (ID) Time Parsing Support
+
+This fork includes comprehensive Indonesian time parsing support with the following features:
+
+#### Supported Time Expressions
+
+**Relative Time:**
+- `hari ini` (today), `kemarin` (yesterday), `besok` (tomorrow), `lusa` (day after tomorrow)
+- `sekarang` (now), `kemarin lusa` (day before yesterday)
+
+**Week Expressions:**
+- `minggu depan` / `minggu kemudian` (next week)
+- `minggu lalu` / `minggu kemaren` / `minggu kemarin` (last week)
+- `N minggu lalu` / `N minggu depan` (N weeks ago/from now)
+- `minggu ini` (this week - returns interval)
+- `akhir minggu` (weekend)
+
+**Month Expressions:**
+- `bulan depan` (next month), `bulan lalu` (last month)
+- `bulan ini` (this month - returns interval)
+- `awal bulan` (beginning of month - returns interval)
+- `bulan ini sampai sekarang` / `dari awal bulan sampai sekarang` / `sejak awal bulan` (month to date)
+
+**Year Expressions:**
+- `tahun depan` (next year)
+
+**Duration-Based:**
+- `dalam X` / `X lagi` (in X duration)
+- `X yang lalu` / `X lalu` (X ago)
+
+**Date Formats:**
+- `DD/MM/YYYY`, `DD-MM-YYYY`, `DD.MM.YYYY`
+- `DD/MM`, `DD-MM`, `DD.MM` (current year)
+- `YYYY-MM-DD` (ISO format)
+- `YYYYMMDD` (no separators)
+- `DD bulan` / `DD bulan YYYY` (with month names)
+- `bulan YYYY` (month and year only)
+
+**Time Expressions:**
+- `pukul HH:MM` / `jam HH:MM` (24-hour format)
+- `jam HH pagi/sore/malam` (12-hour with part of day)
+- `besok pagi` (tomorrow morning)
+- `tadi malam` (last night)
+
+**Days of Week:**
+- `senin`, `selasa`, `rabu`, `kamis`, `jumat`, `sabtu`, `minggu` / `ahad`
+
+**Intervals:**
+- `dari X sampai Y` / `X sampe Y` (from X until Y)
+- `sampai X` (until X)
+
+**Indonesian Holidays:**
+- Hari Kemerdekaan (17 Agustus), Tahun Baru, Hari Pahlawan, Hari Raya Natal, and more
+
+#### Configuration
+
+- **Timezone**: Asia/Jakarta (WIB, UTC+7) by default
+- **Default timezone**: Set in `exe/ExampleMain.hs` to `Asia/Jakarta`
+- **Docker timezone**: Configured in Dockerfile
+
+#### Testing
+
+Run the comprehensive test suite:
+```bash
+./test_indonesian.sh
+```
+
+See [DOCKER_GUIDE.md](DOCKER_GUIDE.md) for detailed testing instructions and examples.
+
+#### Files Modified
+
+- `Duckling/Time/ID/Rules.hs` - Indonesian time parsing rules (52 rules)
+- `Duckling/Time/ID/Corpus.hs` - Test corpus for Indonesian
+- `Duckling/TimeGrain/ID/Rules.hs` - Time grain rules
+- `Duckling/Dimensions/ID.hs` - Dimension definitions
+- `exe/ExampleMain.hs` - Default timezone set to Asia/Jakarta
+- `Dockerfile` - Timezone configuration and BuildKit optimizations
 
 ---
 
