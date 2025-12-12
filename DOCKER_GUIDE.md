@@ -1,24 +1,15 @@
 # Docker Guide for Duckling
 
-## Quick Start (Pre-built Image)
+## Overview
 
-If you just want to run Duckling without building:
-
-```bash
-# Pull the pre-built image
-docker pull dafal/duckling-past:latest
-
-# Run the container
-docker run -p 8000:8000 dafal/duckling-past:latest
-```
-
-The server will be available at `http://localhost:8000`
-
-**Note:** This uses the pre-built image from Docker Hub, which may not include your local changes.
+This guide covers building and running Duckling with Indonesian (ID) time parsing support. The Docker image is configured with:
+- **Timezone**: Asia/Jakarta (WIB, UTC+7)
+- **Languages**: English (EN) and Indonesian (ID) only
+- **Default timezone**: Asia/Jakarta for all API requests
 
 ---
 
-## Build and Run Locally (Recommended for Development)
+## Build and Run Locally
 
 If you've made changes to the code (like the Indonesian time parsing improvements), you need to build the Docker image locally:
 
@@ -64,30 +55,15 @@ docker rm duckling
 
 ### Step 3: Test the Server
 
+The server will be available at `http://localhost:8000`
+
+**Quick test:**
 ```bash
-# Test with curl
 curl -XPOST http://localhost:8000/parse \
-  -H "Content-Type: application/x-www-form-urlencoded" \
   -d 'locale=id_ID&text=hari ini'
-
-# Or with JSON
-curl -XPOST http://localhost:8000/parse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "locale": "id_ID",
-    "text": "hari ini",
-    "dims": ["time"]
-  }'
-
-# Test Indonesian time parsing
-curl -XPOST http://localhost:8000/parse \
-  -H "Content-Type: application/json" \
-  -d '{
-    "locale": "id_ID",
-    "text": "Senin jam 3",
-    "dims": ["time"]
-  }'
 ```
+
+See the [Comprehensive Testing](#comprehensive-testing) section below for full test suite.
 
 ---
 
@@ -245,38 +221,278 @@ This is faster for development but requires Haskell environment setup.
 
 ---
 
-## Testing Indonesian Time Parsing
+## Comprehensive Testing
 
-After starting the container, test with:
+After starting the container, you can test all supported Indonesian time expressions. The following test suite covers all implemented features:
+
+### Test Script
+
+Save this as `test_indonesian.sh`:
 
 ```bash
-# Basic relative time
-curl -XPOST http://localhost:8000/parse \
-  -d 'locale=id_ID&text=hari ini'
+#!/bin/bash
 
-# Days of week
-curl -XPOST http://localhost:8000/parse \
-  -d 'locale=id_ID&text=Senin'
+# Test expressions
+expressions=(
+  "hari ini"
+  "kemarin"
+  "besok"
+  "lusa"
+  "minggu depan"
+  "bulan depan"
+  "bulan lalu"
+  "tahun depan"
+  "2 hari lagi"
+  "3 minggu lalu"
+  "akhir minggu"
+  "awal bulan"
+  "jam 3 sore"
+  "besok pagi"
+  "tadi malam"
+  "13 desember"
+  "14 februari 2025"
+  "1 jan 2024"
+  "25 desember 2025"
+  "2025-11-12"
+  "20251112"
+  "25/12/2024"
+  "25/12"
+  "12 Jan 2025"
+  "Jan 2025"
+)
 
-# Dates
-curl -XPOST http://localhost:8000/parse \
-  -d 'locale=id_ID&text=15 Januari 2024'
+echo "=================================="
+echo "Duckling Indonesian Time Parsing Test"
+echo "=================================="
+echo ""
 
-# Time
-curl -XPOST http://localhost:8000/parse \
-  -d 'locale=id_ID&text=pukul 14:30'
-
-# Holidays
-curl -XPOST http://localhost:8000/parse \
-  -d 'locale=id_ID&text=hari kemerdekaan'
+for expr in "${expressions[@]}"; do
+  echo "Testing: '$expr'"
+  result=$(curl -s -XPOST http://localhost:8000/parse \
+    --data-urlencode "locale=id_ID" \
+    --data-urlencode "text=$expr")
+  
+  if echo "$result" | jq -e 'length > 0' > /dev/null 2>&1; then
+    echo "$result" | jq -r '.[0] | "✓ Body: " + .body + "\n  Dimension: " + .dim + "\n  Value: " + (if .value.type == "interval" then "interval: " + .value.from.value + " to " + .value.to.value else .value.value end)'
+  else
+    echo "✗ No match"
+  fi
+  echo ""
+done
 ```
+
+Make it executable and run:
+```bash
+chmod +x test_indonesian.sh
+./test_indonesian.sh
+```
+
+### Individual Test Examples
+
+#### 1. Relative Time Expressions
+
+```bash
+# Today
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=hari ini'
+
+# Yesterday
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=kemarin'
+
+# Tomorrow
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=besok'
+
+# Day after tomorrow
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=lusa'
+
+# Now
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=sekarang'
+```
+
+#### 2. Week Expressions
+
+```bash
+# Next week
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=minggu depan'
+
+# Last week (informal)
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=minggu kemaren'
+
+# Last week (formal)
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=minggu kemarin'
+
+# N weeks ago
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=3 minggu lalu'
+
+# This week (returns interval)
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=minggu ini'
+
+# Weekend
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=akhir minggu'
+```
+
+#### 3. Month Expressions
+
+```bash
+# Next month
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=bulan depan'
+
+# Last month
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=bulan lalu'
+
+# This month (returns interval)
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=bulan ini'
+
+# Beginning of month (returns interval)
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=awal bulan'
+
+# Month to date
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=bulan ini sampai sekarang'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=dari awal bulan sampai sekarang'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=sejak awal bulan'
+```
+
+#### 4. Year Expressions
+
+```bash
+# Next year
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=tahun depan'
+```
+
+#### 5. Duration-Based Expressions
+
+```bash
+# In X duration
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=dalam 2 hari'
+
+# X duration later
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=2 hari lagi'
+
+# X duration ago
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=2 hari yang lalu'
+```
+
+#### 6. Date Formats
+
+```bash
+# DD/MM/YYYY
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=25/12/2024'
+
+# DD/MM (current year)
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=25/12'
+
+# DD-MM-YYYY
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=25-12-2024'
+
+# ISO format
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=2025-11-12'
+
+# YYYYMMDD (no separators)
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=20251112'
+
+# With month name
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=13 desember'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=14 februari 2025'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=1 jan 2024'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=25 desember 2025'
+
+# Month and year only
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=Jan 2025'
+```
+
+#### 7. Time Expressions
+
+```bash
+# 24-hour format
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=pukul 14:30'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=jam 14'
+
+# 12-hour format with part of day
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=jam 3 sore'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=pukul 2 pagi'
+```
+
+#### 8. Part of Day Combinations
+
+```bash
+# Tomorrow morning
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=besok pagi'
+
+# Last night
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=tadi malam'
+```
+
+#### 9. Interval Expressions
+
+```bash
+# From X to Y
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=dari 2 minggu lalu sampai sekarang'
+
+# X until Y
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=minggu lalu sampai sekarang'
+```
+
+#### 10. Days of Week
+
+```bash
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=senin'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=selasa'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=rabu'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=kamis'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=jumat'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=sabtu'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=minggu'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=ahad'
+```
+
+#### 11. Indonesian Holidays
+
+```bash
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=hari kemerdekaan'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=17 agustusan'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=tahun baru'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=hari pahlawan'
+curl -XPOST http://localhost:8000/parse -d 'locale=id_ID&text=hari raya natal'
+```
+
+### Expected Results
+
+All expressions should return valid JSON with:
+- `body`: The matched text
+- `dim`: Dimension type (usually "time")
+- `value`: The parsed time value (ISO 8601 format with WIB timezone, UTC+7)
+
+**Example response:**
+```json
+[{
+  "body": "hari ini",
+  "dim": "time",
+  "end": 8,
+  "latent": false,
+  "start": 0,
+  "value": {
+    "grain": "day",
+    "type": "value",
+    "value": "2025-12-12T00:00:00.000+07:00",
+    "values": [{
+      "grain": "day",
+      "type": "value",
+      "value": "2025-12-12T00:00:00.000+07:00"
+    }]
+  }
+}]
+```
+
+**Note**: All times are returned in WIB (UTC+7) timezone by default.
 
 ---
 
 ## Notes
 
-- The Docker image is quite large (~1-2GB) due to Haskell dependencies
-- Build time depends on your machine (CPU, RAM, disk speed)
-- The server runs on port 8000 by default
-- All dimensions are enabled by default, but you can specify with `dims` parameter
+- **Timezone**: All times are returned in WIB (Asia/Jakarta, UTC+7) by default
+- **Languages**: Only English (EN) and Indonesian (ID) are compiled for faster builds
+- **Image size**: ~1-2GB due to Haskell dependencies
+- **Build time**: Depends on your machine (CPU, RAM, disk speed)
+- **Port**: Server runs on port 8000 by default
+- **Dimensions**: All dimensions are enabled by default, but you can specify with `dims` parameter
+- **BuildKit**: Always use `DOCKER_BUILDKIT=1` for faster builds with cache persistence
 
