@@ -14,14 +14,11 @@ import qualified Data.HashMap.Strict as HashMap
 
 import Duckling.Locale
 import Duckling.Ranking.Types
-import qualified Duckling.Ranking.Classifiers.EN_GB as EN_GBClassifiers
 import qualified Duckling.Ranking.Classifiers.EN_US as EN_USClassifiers
-import qualified Duckling.Ranking.Classifiers.EN_XX as EN_XXClassifiers
 import qualified Duckling.Ranking.Classifiers.ID_XX as ID_XXClassifiers
 
 classifiers :: Locale -> Classifiers
-classifiers (Locale EN (Just GB)) = EN_GBClassifiers.classifiers
 classifiers (Locale EN (Just US)) = EN_USClassifiers.classifiers
-classifiers (Locale EN _) = EN_XXClassifiers.classifiers
+classifiers (Locale EN _) = EN_USClassifiers.classifiers  -- Default to US for EN
 classifiers (Locale ID _) = ID_XXClassifiers.classifiers
 classifiers _ = HashMap.empty  -- Unsupported languages return empty classifiers

@@ -28,19 +28,7 @@ import Duckling.Time.Corpus
 import Duckling.Time.EN.Corpus
 import Duckling.TimeGrain.Types (Grain(..))
 import Duckling.Types (Range(..))
-import qualified Duckling.Region as R
-import qualified Duckling.Time.EN.AU.Corpus as AU
-import qualified Duckling.Time.EN.BZ.Corpus as BZ
-import qualified Duckling.Time.EN.CA.Corpus as CA
-import qualified Duckling.Time.EN.GB.Corpus as GB
-import qualified Duckling.Time.EN.IE.Corpus as IE
-import qualified Duckling.Time.EN.IN.Corpus as IN
-import qualified Duckling.Time.EN.JM.Corpus as JM
-import qualified Duckling.Time.EN.NZ.Corpus as NZ
-import qualified Duckling.Time.EN.PH.Corpus as PH
-import qualified Duckling.Time.EN.TT.Corpus as TT
 import qualified Duckling.Time.EN.US.Corpus as US
-import qualified Duckling.Time.EN.ZA.Corpus as ZA
 
 tests :: TestTree
 tests = testGroup "EN Tests"
@@ -57,68 +45,13 @@ tests = testGroup "EN Tests"
 
 localeTests :: TestTree
 localeTests = testGroup "Locale Tests"
-  [ testGroup "EN_AU Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeAU AU.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeAU []
-    ]
-  , testGroup "EN_BZ Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeBZ BZ.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeBZ []
-    ]
-  , testGroup "EN_CA Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeCA CA.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeCA []
-    ]
-  , testGroup "EN_GB Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeGB GB.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeGB []
-    ]
-  , testGroup "EN_IE Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeIE IE.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeIE []
-    ]
-  , testGroup "EN_IN Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeIN IN.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeIN []
-    ]
-  , testGroup "EN_JM Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeJM JM.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeJM []
-    ]
-  , testGroup "EN_NZ Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeNZ NZ.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeNZ []
-    ]
-  , testGroup "EN_PH Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localePH PH.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localePH []
-    ]
-  , testGroup "EN_TT Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeTT TT.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeTT []
-    ]
-  , testGroup "EN_US Tests"
+  [ testGroup "EN_US Tests"
     [ makeCorpusTest [Seal Time] $ withLocale corpus localeUS US.allExamples
     , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeUS []
     ]
-  , testGroup "EN_ZA Tests"
-    [ makeCorpusTest [Seal Time] $ withLocale corpus localeZA ZA.allExamples
-    , makeNegativeCorpusTest [Seal Time] $ withLocale negativeCorpus localeZA []
-    ]
   ]
   where
-    localeAU = makeLocale EN $ Just AU
-    localeBZ = makeLocale EN $ Just BZ
-    localeCA = makeLocale EN $ Just R.CA
-    localeGB = makeLocale EN $ Just GB
-    localeIE = makeLocale EN $ Just IE
-    localeIN = makeLocale EN $ Just IN
-    localeJM = makeLocale EN $ Just JM
-    localeNZ = makeLocale EN $ Just NZ
-    localePH = makeLocale EN $ Just PH
-    localeTT = makeLocale EN $ Just TT
     localeUS = makeLocale EN $ Just US
-    localeZA = makeLocale EN $ Just ZA
 
 exactSecondTests :: TestTree
 exactSecondTests = testCase "Exact Second Tests" $

@@ -20,19 +20,7 @@ import Duckling.Locale
 import Duckling.Testing.Asserts
 import Duckling.Testing.Types (testContext, testOptions, withLocale)
 import Duckling.Types (Range(..))
-import qualified Duckling.AmountOfMoney.EN.AU.Corpus as AU
-import qualified Duckling.AmountOfMoney.EN.BZ.Corpus as BZ
-import qualified Duckling.AmountOfMoney.EN.CA.Corpus as CA
-import qualified Duckling.AmountOfMoney.EN.GB.Corpus as GB
-import qualified Duckling.AmountOfMoney.EN.IN.Corpus as IN
-import qualified Duckling.AmountOfMoney.EN.IE.Corpus as IE
-import qualified Duckling.AmountOfMoney.EN.JM.Corpus as JM
-import qualified Duckling.AmountOfMoney.EN.NZ.Corpus as NZ
-import qualified Duckling.AmountOfMoney.EN.PH.Corpus as PH
-import qualified Duckling.AmountOfMoney.EN.TT.Corpus as TT
 import qualified Duckling.AmountOfMoney.EN.US.Corpus as US
-import qualified Duckling.AmountOfMoney.EN.ZA.Corpus as ZA
-import qualified Duckling.Region as R
 
 tests :: TestTree
 tests = testGroup "EN Tests"
@@ -46,92 +34,15 @@ tests = testGroup "EN Tests"
 
 localeTests :: TestTree
 localeTests = testGroup "Locale Tests"
-  [ testGroup "EN_AU Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeAU AU.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeAU AU.negativeExamples
-    ]
-   , testGroup "EN_BZ Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeBZ BZ.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeBZ BZ.negativeExamples
-    ]
-   , testGroup "EN_CA Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeCA CA.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeCA CA.negativeExamples
-    ]
-   , testGroup "EN_GB Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeGB GB.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeGB GB.negativeExamples
-    ]
-   , testGroup "EN_IE Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeIE IE.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeIE IE.negativeExamples
-    ]
-   , testGroup "EN_IN Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeIN IN.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeIN IN.negativeExamples
-    ]
-   , testGroup "EN_JM Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeJM JM.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeJM JM.negativeExamples
-    ]
-   , testGroup "EN_NZ Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeNZ NZ.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeNZ NZ.negativeExamples
-    ]
-   , testGroup "EN_PH Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localePH PH.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localePH PH.negativeExamples
-    ]
-    , testGroup "EN_TT Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeTT TT.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeTT TT.negativeExamples
-    ]
-    , testGroup "EN_US Tests"
+  [ testGroup "EN_US Tests"
     [ makeCorpusTest [Seal AmountOfMoney]
       $ withLocale corpus localeUS US.allExamples
     , makeNegativeCorpusTest [Seal AmountOfMoney]
       $ withLocale negativeCorpus localeUS US.negativeExamples
     ]
-    , testGroup "EN_ZA Tests"
-    [ makeCorpusTest [Seal AmountOfMoney]
-      $ withLocale corpus localeZA ZA.allExamples
-    , makeNegativeCorpusTest [Seal AmountOfMoney]
-      $ withLocale negativeCorpus localeZA ZA.negativeExamples
-    ]
   ]
   where
-    localeAU = makeLocale EN $ Just AU
-    localeBZ = makeLocale EN $ Just BZ
-    localeCA = makeLocale EN $ Just R.CA
-    localeGB = makeLocale EN $ Just GB
-    localeIE = makeLocale EN $ Just IE
-    localeIN = makeLocale EN $ Just IN
-    localeJM = makeLocale EN $ Just JM
-    localeNZ = makeLocale EN $ Just NZ
-    localePH = makeLocale EN $ Just PH
-    localeTT = makeLocale EN $ Just TT
     localeUS = makeLocale EN $ Just US
-    localeZA = makeLocale EN $ Just ZA
 
 
 intersectTests :: TestTree

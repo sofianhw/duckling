@@ -30,8 +30,6 @@ import Duckling.Rules
 import Duckling.Testing.Types
 import qualified Duckling.Region as R
 import qualified Duckling.Time.EN.Corpus as ENTime
-import qualified Duckling.Time.EN.CA.Corpus as EN_CATime
-import qualified Duckling.Time.EN.GB.Corpus as EN_GBTime
 import qualified Duckling.Time.EN.US.Corpus as EN_USTime
 import qualified Duckling.Time.ID.Corpus as IDTime
 
@@ -161,10 +159,8 @@ getCorpusForLang = \case
   _ -> (testContext, testOptions, [])  -- Unsupported languages return empty corpus
 
 getExamplesForLocale :: Lang -> Region -> [Example]
-getExamplesForLocale EN R.CA = EN_CATime.allExamples
-getExamplesForLocale EN GB = EN_GBTime.allExamples
 getExamplesForLocale EN US = EN_USTime.allExamples
-getExamplesForLocale _ _   = []  -- Only EN locales have examples, ID uses default corpus
+getExamplesForLocale _ _   = []  -- Only EN_US has examples, ID uses default corpus
 
 -- -----------------------------------------------------------------
 -- Source generators
