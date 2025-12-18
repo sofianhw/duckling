@@ -611,6 +611,47 @@ ruleDurationYangLalu = Rule
       _ -> Nothing
   }
 
+-- "X hari terakhir" atau "X hari yang terakhir" (last X days) - returns date range
+-- Uses cycleN like English "last N days" rule for consistency
+-- cycleN True Day (-days) creates interval from (days) days ago to yesterday
+-- This matches English behavior: "last 7 days" returns Dec 11 to Dec 18
+ruleHariTerakhir :: Rule
+ruleHariTerakhir = Rule
+  { name = "<numeral> hari terakhir"
+  , pattern =
+    [ dimension Numeral
+    , regex "hari"
+    , regex "terakhir|yang terakhir"
+    ]
+  , prod = \tokens -> case tokens of
+      (Token Numeral TNumeral.NumeralData{TNumeral.value = v}:_:_) -> do
+        let days = floor v
+            -- Use cycleN like English "last N days" rule
+            -- cycleN True Day (-days) creates Closed interval from (days) days ago to yesterday
+        tt $ cycleN True TG.Day (-days)
+      _ -> Nothing
+  }
+
+-- "dalam X hari terakhir" (in last X days) - returns date range
+-- Same as ruleHariTerakhir, uses cycleN for consistency with English
+ruleDalamHariTerakhir :: Rule
+ruleDalamHariTerakhir = Rule
+  { name = "dalam <numeral> hari terakhir"
+  , pattern =
+    [ regex "dalam"
+    , dimension Numeral
+    , regex "hari"
+    , regex "terakhir|yang terakhir"
+    ]
+  , prod = \tokens -> case tokens of
+      (_:Token Numeral TNumeral.NumeralData{TNumeral.value = v}:_:_) -> do
+        let days = floor v
+            -- Use cycleN like English "last N days" rule
+            -- cycleN True Day (-days) creates Closed interval from (days) days ago to yesterday
+        tt $ cycleN True TG.Day (-days)
+      _ -> Nothing
+  }
+
 -----------------------------------------------------------------
 -- Interval waktu: "dari X sampai Y", "X sampe Y"
 -----------------------------------------------------------------
@@ -981,6 +1022,8 @@ rules =
   , ruleTimePartOfDay
   , ruleTimeJamHour
   , ruleTadiMalam
+  , ruleHariTerakhir
+  , ruleDalamHariTerakhir
   , ruleDalamDuration
   , ruleDurationKemudian
   , ruleDurationYangLalu
