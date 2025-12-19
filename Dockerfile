@@ -59,6 +59,12 @@ RUN apt-get update -qq && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Create working directory and log directory with proper permissions
+WORKDIR /app
+RUN mkdir -p /app/log && \
+  chmod 755 /app && \
+  chmod 755 /app/log
+
 COPY --from=builder /root/.local/bin/duckling-example-exe /usr/local/bin/
 
 EXPOSE 8000
