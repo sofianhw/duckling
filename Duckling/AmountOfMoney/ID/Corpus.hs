@@ -65,6 +65,46 @@ allExamples = concat
              [ "IDR33000"
              , "IDR 33.000"
              ]
+  -- Indonesian money abbreviations
+  , examples (simple IDR 100000)
+             [ "100rb"
+             , "100 rb"
+             , "100 ribu"
+             , "100rb rupiah"
+             , "100 rb rupiah"
+             , "100 ribu rupiah"
+             , "Rp 100rb"
+             , "RP 100 ribu"
+             ]
+  , examples (simple IDR 2000000)
+             [ "2jt"
+             , "2 jt"
+             , "2 juta"
+             , "2jt rupiah"
+             , "2 jt rupiah"
+             , "2 juta rupiah"
+             , "Rp 2jt"
+             , "RP 2 juta"
+             ]
+  , examples (simple IDR 1000000000)
+             [ "1 milyar"
+             , "1milyar"
+             , "1 milyar rupiah"
+             , "Rp 1 milyar"
+             , "RP 1milyar"
+             ]
+  -- Number with dots as thousand separator
+  , examples (simple IDR 100000)
+             [ "100.000"
+             , "100.000 rupiah"
+             , "Rp 100.000"
+             , "RP 100.000"
+             ]
+  , examples (simple IDR 5000000)
+             [ "5.000.000"
+             , "5.000.000 rupiah"
+             , "Rp 5.000.000"
+             ]
   , examples (simple Pound 9)
              [ "£9"
              , "sembilan pound"

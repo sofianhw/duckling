@@ -16,12 +16,14 @@ module Duckling.AmountOfMoney.ID.Rules
 import Data.Maybe
 import Data.String
 import Prelude
+import qualified Data.Text as Text
 
 import Duckling.AmountOfMoney.Helpers
 import Duckling.AmountOfMoney.Types (Currency(..), AmountOfMoneyData(..))
 import Duckling.Dimensions.Types
-import Duckling.Numeral.Helpers (isNatural, isPositive)
+import Duckling.Numeral.Helpers (isNatural, isPositive, parseDouble)
 import Duckling.Numeral.Types (NumeralData (..))
+import Duckling.Regex.Types
 import Duckling.Types
 import qualified Duckling.AmountOfMoney.Types as TAmountOfMoney
 import qualified Duckling.Numeral.Types as TNumeral
@@ -53,7 +55,7 @@ ruleIdr :: Rule
 ruleIdr = Rule
   { name = "IDR"
   , pattern =
-    [ regex "rp\\.?|rupiah"
+    [ regex "(?i)rp\\.?|rupiah"
     ]
   , prod = \_ -> Just . Token AmountOfMoney $ currencyOnly IDR
   }
@@ -210,9 +212,118 @@ ruleIntervalMin = Rule
       _ -> Nothing
   }
 
+-- "rb", "ribu" = thousand (multiply by 1000)
+-- Handles both "100 rb" (with space) and "100rb" (attached)
+ruleRibu :: Rule
+ruleRibu = Rule
+  { name = "<numeral> ribu/rb"
+  , pattern =
+    [ Predicate isPositive
+    , regex "(?i)(rb|ribu)"
+    ]
+  , prod = \case
+      (Token Numeral NumeralData{TNumeral.value = v}:_) ->
+        Just . Token AmountOfMoney . withValue (1000 * v) $ currencyOnly IDR
+      _ -> Nothing
+  }
+
+-- Handle "100rb" as single token (number attached to abbreviation)
+ruleRibuAttached :: Rule
+ruleRibuAttached = Rule
+  { name = "<number>rb (attached)"
+  , pattern =
+    [ regex "(\\d+)(?i)(rb|ribu)"
+    ]
+  , prod = \tokens -> case tokens of
+      (Token RegexMatch (GroupMatch (num:abbr:_)):_) -> do
+        v <- parseDouble num
+        Just . Token AmountOfMoney . withValue (1000 * v) $ currencyOnly IDR
+      _ -> Nothing
+  }
+
+-- "jt", "juta" = million (multiply by 1,000,000)
+ruleJuta :: Rule
+ruleJuta = Rule
+  { name = "<numeral> juta/jt"
+  , pattern =
+    [ Predicate isPositive
+    , regex "(?i)(jt|juta)"
+    ]
+  , prod = \case
+      (Token Numeral NumeralData{TNumeral.value = v}:_) ->
+        Just . Token AmountOfMoney . withValue (1000000 * v) $ currencyOnly IDR
+      _ -> Nothing
+  }
+
+-- Handle "100jt" as single token (number attached to abbreviation)
+ruleJutaAttached :: Rule
+ruleJutaAttached = Rule
+  { name = "<number>jt (attached)"
+  , pattern =
+    [ regex "(\\d+)(?i)(jt|juta)"
+    ]
+  , prod = \tokens -> case tokens of
+      (Token RegexMatch (GroupMatch (num:abbr:_)):_) -> do
+        v <- parseDouble num
+        Just . Token AmountOfMoney . withValue (1000000 * v) $ currencyOnly IDR
+      _ -> Nothing
+  }
+
+-- "milyar" = billion (multiply by 1,000,000,000)
+ruleMilyar :: Rule
+ruleMilyar = Rule
+  { name = "<numeral> milyar"
+  , pattern =
+    [ Predicate isPositive
+    , regex "(?i)milyar"
+    ]
+  , prod = \case
+      (Token Numeral NumeralData{TNumeral.value = v}:_) ->
+        Just . Token AmountOfMoney . withValue (1000000000 * v) $ currencyOnly IDR
+      _ -> Nothing
+  }
+
+-- Handle "100milyar" as single token (number attached to abbreviation)
+ruleMilyarAttached :: Rule
+ruleMilyarAttached = Rule
+  { name = "<number>milyar (attached)"
+  , pattern =
+    [ regex "(\\d+)(?i)milyar"
+    ]
+  , prod = \tokens -> case tokens of
+      (Token RegexMatch (GroupMatch (num:_)):_) -> do
+        v <- parseDouble num
+        Just . Token AmountOfMoney . withValue (1000000000 * v) $ currencyOnly IDR
+      _ -> Nothing
+  }
+
+-- Handle "100.000" as amount of money (Indonesian number format with dots as thousand separators)
+-- This pattern should come before other rules to prioritize amount-of-money over phone-number
+ruleNumberWithDots :: Rule
+ruleNumberWithDots = Rule
+  { name = "<number with dots> (as amount of money)"
+  , pattern =
+    [ regex "(\\d{1,3}(?:\\.\\d{3})+)"
+    ]
+  , prod = \tokens -> case tokens of
+      (Token RegexMatch (GroupMatch (match:_)):_) -> do
+        -- Remove dots and parse as number (Indonesian uses dots as thousand separators)
+        let cleaned = Text.replace (Text.pack ".") Text.empty match
+        v <- parseDouble cleaned
+        Just . Token AmountOfMoney . mkLatent $ valueOnly v
+      _ -> Nothing
+  }
+
 rules :: [Rule]
 rules =
-  [ ruleUnitAmount
+  [ ruleNumberWithDots      -- Must come early to catch "100.000" before phone-number
+  , ruleRibuAttached         -- Must come before ruleRibu to catch "100rb" (attached)
+  , ruleJutaAttached         -- Must come before ruleJuta to catch "100jt" (attached)
+  , ruleMilyarAttached       -- Must come before ruleMilyar to catch "100milyar" (attached)
+  , ruleRibu                 -- Handles "100 rb" (with space)
+  , ruleJuta                 -- Handles "100 juta" (with space)
+  , ruleMilyar               -- Handles "100 milyar" (with space)
+  , ruleUnitAmount
   , ruleDollar
   , ruleIdr
   , ruleIntersect
