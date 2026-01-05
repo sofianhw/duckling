@@ -568,6 +568,141 @@ ruleSejakAwalBulan = Rule
       Token Time <$> interval TTime.Closed start now
   }
 
+-- "selama bulan <month> <year>" (during the month of <month> in <year>) - returns full month interval
+-- Example: "selama bulan desember 2025"
+ruleSelamaBulanTahun :: Rule
+ruleSelamaBulanTahun = Rule
+  { name = "selama bulan <month> <year>"
+  , pattern =
+    [ regex "selama"
+    , regex "bulan"
+    , regex "([[:alpha:]\\.]+)"
+    , regex "(\\d{2,4})"
+    ]
+  , prod = \tokens -> case tokens of
+      (_:_:Token RegexMatch (GroupMatch (mmText:_)):Token RegexMatch (GroupMatch (yy:_)):_) -> do
+        m <- parseMonthID mmText
+        y <- parseInt yy
+        start <- intersect (dayOfMonth 1) $ yearMonth y m
+        end <- Just $ cycleLastOf TG.Day $ yearMonth y m
+        Token Time <$> interval TTime.Closed start end
+      _ -> Nothing
+  }
+
+-- "selama bulan <month>" (during the month of <month>) - returns full month interval
+-- Example: "selama bulan desember"
+ruleSelamaBulan :: Rule
+ruleSelamaBulan = Rule
+  { name = "selama bulan <month>"
+  , pattern =
+    [ regex "selama"
+    , regex "bulan"
+    , regex "([[:alpha:]\\.]+)"
+    ]
+  , prod = \tokens -> case tokens of
+      (_:_:Token RegexMatch (GroupMatch (mmText:_)):_) -> do
+        m <- parseMonthID mmText
+        -- Use month predicate which defaults to current year
+        start <- intersect (dayOfMonth 1) $ month m
+        end <- Just $ cycleLastOf TG.Day $ month m
+        Token Time <$> interval TTime.Closed start end
+      _ -> Nothing
+  }
+
+-- "selama minggu ini" (during this week) - returns full week interval
+-- Example: "selama minggu ini"
+ruleSelamaMingguIni :: Rule
+ruleSelamaMingguIni = Rule
+  { name = "selama minggu ini"
+  , pattern =
+    [ regex "selama"
+    , regex "minggu"
+    , regex "ini"
+    ]
+  , prod = \_ ->
+      -- Full week: Monday of this week to Sunday of this week
+      -- Start: Monday of this week (cycleNth TG.Week 0)
+      -- End: Sunday of this week (day before Monday of next week)
+      let end = cycleNthAfter True TG.Day (-1) $ cycleNth TG.Week 1
+      in Token Time <$> interval TTime.Closed (cycleNth TG.Week 0) end
+  }
+
+-- "selama minggu depan" (during next week) - returns full week interval
+-- Example: "selama minggu depan"
+ruleSelamaMingguDepan :: Rule
+ruleSelamaMingguDepan = Rule
+  { name = "selama minggu depan"
+  , pattern =
+    [ regex "selama"
+    , regex "minggu"
+    , regex "depan"
+    ]
+  , prod = \_ ->
+      -- Full week: Monday of next week to Sunday of next week
+      -- Start: Monday of next week (cycleNth TG.Week 1)
+      -- End: Sunday of next week (day before Monday of week after next)
+      let end = cycleNthAfter True TG.Day (-1) $ cycleNth TG.Week 2
+      in Token Time <$> interval TTime.Closed (cycleNth TG.Week 1) end
+  }
+
+-- "selama minggu lalu" (during last week) - returns full week interval
+-- Example: "selama minggu lalu"
+ruleSelamaMingguLalu :: Rule
+ruleSelamaMingguLalu = Rule
+  { name = "selama minggu lalu"
+  , pattern =
+    [ regex "selama"
+    , regex "minggu"
+    , regex "lalu"
+    ]
+  , prod = \_ ->
+      -- Full week: Monday of last week to Sunday of last week
+      -- Start: Monday of last week (cycleNth TG.Week (-1))
+      -- End: Sunday of last week (day before Monday of this week)
+      let end = cycleNthAfter True TG.Day (-1) $ cycleNth TG.Week 0
+      in Token Time <$> interval TTime.Closed (cycleNth TG.Week (-1)) end
+  }
+
+-- "selama bulan lalu" (during last month) - returns full month interval
+-- Example: "selama bulan lalu"
+ruleSelamaBulanLalu :: Rule
+ruleSelamaBulanLalu = Rule
+  { name = "selama bulan lalu"
+  , pattern =
+    [ regex "selama"
+    , regex "bulan"
+    , regex "lalu"
+    ]
+  , prod = \_ -> do
+      -- Get last month
+      let lastMonth = cycleNth TG.Month (-1)
+      -- Start: first day of last month
+      start <- intersect (dayOfMonth 1) lastMonth
+      -- End: last day of last month (start of current month minus 1 day)
+      end <- Just $ cycleNthAfter True TG.Day (-1) $ cycleNth TG.Month 0
+      Token Time <$> interval TTime.Closed start end
+  }
+
+-- "selama bulan depan" (during next month) - returns full month interval
+-- Example: "selama bulan depan"
+ruleSelamaBulanDepan :: Rule
+ruleSelamaBulanDepan = Rule
+  { name = "selama bulan depan"
+  , pattern =
+    [ regex "selama"
+    , regex "bulan"
+    , regex "depan"
+    ]
+  , prod = \_ -> do
+      -- Get next month
+      let nextMonth = cycleNth TG.Month 1
+      -- Start: first day of next month
+      start <- intersect (dayOfMonth 1) nextMonth
+      -- End: last day of next month (start of month after next minus 1 day)
+      end <- Just $ cycleNthAfter True TG.Day (-1) $ cycleNth TG.Month 2
+      Token Time <$> interval TTime.Closed start end
+  }
+
 -----------------------------------------------------------------
 -- Ekspresi durasi: "dalam 2 hari", "2 hari kemudian", "2 hari yang lalu"
 -----------------------------------------------------------------
@@ -992,6 +1127,9 @@ rules =
   , ruleMingguKemudian
   , ruleMingguLalu
   , ruleMingguKemarenKemarin
+  , ruleSelamaMingguIni
+  , ruleSelamaMingguDepan
+  , ruleSelamaMingguLalu
   , ruleMingguIni
   , ruleMonday
   , ruleTuesday
@@ -1007,11 +1145,15 @@ rules =
   , ruleKemarin
   , ruleKemarinLusa
   , ruleBulanDepan
+  , ruleSelamaBulanLalu
+  , ruleSelamaBulanDepan
   , ruleBulanLalu
   , ruleBulanIni
   , ruleBulanIniSampaiSekarang
   , ruleDariAwalBulanSampaiSekarang
   , ruleSejakAwalBulan
+  , ruleSelamaBulanTahun
+  , ruleSelamaBulan
   , ruleTahunDepan
   , ruleAkhirMinggu
   , ruleAwalBulan

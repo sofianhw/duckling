@@ -314,6 +314,46 @@ allExamples = concat
   , examples (datetimeInterval ((2013, 1, 1, 0, 0, 0), (2013, 2, 1, 0, 0, 0)) Day)
              [ "awal bulan"
              ]
+  -- "selama bulan <month>" - full month interval
+  , examples (datetimeInterval ((2013, 12, 1, 0, 0, 0), (2014, 1, 1, 0, 0, 0)) Day)
+             [ "selama bulan desember"
+             , "selama bulan des"
+             ]
+  , examples (datetimeInterval ((2013, 1, 1, 0, 0, 0), (2013, 2, 1, 0, 0, 0)) Day)
+             [ "selama bulan januari"
+             , "selama bulan jan"
+             ]
+  , examples (datetimeInterval ((2013, 8, 1, 0, 0, 0), (2013, 9, 1, 0, 0, 0)) Day)
+             [ "selama bulan agustus"
+             , "selama bulan agu"
+             ]
+  , examples (datetimeInterval ((2025, 12, 1, 0, 0, 0), (2026, 1, 1, 0, 0, 0)) Day)
+             [ "selama bulan desember 2025"
+             , "selama bulan des 2025"
+             ]
+  -- "selama minggu" - full week interval
+  -- Note: Week intervals depend on the reference date (2013-02-12 is a Tuesday)
+  -- This week: Feb 11 (Mon) to Feb 17 (Sun)
+  , examples (datetimeInterval ((2013, 2, 11, 0, 0, 0), (2013, 2, 18, 0, 0, 0)) Day)
+             [ "selama minggu ini"
+             ]
+  -- Next week: Feb 18 (Mon) to Feb 24 (Sun)
+  , examples (datetimeInterval ((2013, 2, 18, 0, 0, 0), (2013, 2, 25, 0, 0, 0)) Day)
+             [ "selama minggu depan"
+             ]
+  -- Last week: Feb 4 (Mon) to Feb 10 (Sun)
+  , examples (datetimeInterval ((2013, 2, 4, 0, 0, 0), (2013, 2, 11, 0, 0, 0)) Day)
+             [ "selama minggu lalu"
+             ]
+  -- "selama bulan lalu/depan" - full month interval
+  -- Last month: Jan 1 to Feb 1 (exclusive end, so Jan 1-31)
+  , examples (datetimeInterval ((2013, 1, 1, 0, 0, 0), (2013, 2, 1, 0, 0, 0)) Day)
+             [ "selama bulan lalu"
+             ]
+  -- Next month: Mar 1 to Apr 1 (exclusive end, so Mar 1-31)
+  , examples (datetimeInterval ((2013, 3, 1, 0, 0, 0), (2013, 4, 1, 0, 0, 0)) Day)
+             [ "selama bulan depan"
+             ]
   
   -- Holidays
   , examples (datetimeHoliday (2013, 1, 1, 0, 0, 0) Day "Tahun Baru Masehi")
