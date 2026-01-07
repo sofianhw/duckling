@@ -401,8 +401,7 @@ ruleNumeralMingguDepan = Rule
       _ -> Nothing
   }
 
--- "minggu depan", "minggu kemudian", "minggu lalu", "minggu kemaren"
--- Returns the same weekday from next/last week (7 days forward/backward)
+-- "minggu depan" - returns full week interval
 ruleMingguDepan :: Rule
 ruleMingguDepan = Rule
   { name = "minggu depan"
@@ -410,7 +409,9 @@ ruleMingguDepan = Rule
     [ regex "minggu"
     , regex "depan"
     ]
-  , prod = \_ -> tt $ cycleNth TG.Day 7
+  , prod = \_ ->
+      let end = cycleNthAfter True TG.Day (-1) $ cycleNth TG.Week 2
+      in Token Time <$> interval TTime.Closed (cycleNth TG.Week 1) end
   }
 
 ruleMingguKemudian :: Rule
@@ -420,9 +421,12 @@ ruleMingguKemudian = Rule
     [ regex "minggu"
     , regex "kemudian"
     ]
-  , prod = \_ -> tt $ cycleNth TG.Day 7
+  , prod = \_ ->
+      let end = cycleNthAfter True TG.Day (-1) $ cycleNth TG.Week 2
+      in Token Time <$> interval TTime.Closed (cycleNth TG.Week 1) end
   }
 
+-- "minggu lalu" - returns full week interval
 ruleMingguLalu :: Rule
 ruleMingguLalu = Rule
   { name = "minggu lalu"
@@ -430,7 +434,9 @@ ruleMingguLalu = Rule
     [ regex "minggu"
     , regex "lalu"
     ]
-  , prod = \_ -> tt $ cycleNth TG.Day (-7)
+  , prod = \_ ->
+      let end = cycleNthAfter True TG.Day (-1) $ cycleNth TG.Week 0
+      in Token Time <$> interval TTime.Closed (cycleNth TG.Week (-1)) end
   }
 
 ruleMingguKemarenKemarin :: Rule
@@ -462,7 +468,12 @@ ruleBulanDepan = Rule
   , pattern =
     [ regex "bulan depan"
     ]
-  , prod = \_ -> tt $ cycleNth TG.Month 1
+  , prod = \_ -> do
+      -- Return full month interval for next month
+      let nextMonth = cycleNth TG.Month 1
+      start <- intersect (dayOfMonth 1) nextMonth
+      end <- Just $ cycleNthAfter True TG.Day (-1) $ cycleNth TG.Month 2
+      Token Time <$> interval TTime.Closed start end
   }
 
 ruleBulanLalu :: Rule
@@ -471,7 +482,12 @@ ruleBulanLalu = Rule
   , pattern =
     [ regex "bulan lalu"
     ]
-  , prod = \_ -> tt $ cycleNth TG.Month (-1)
+  , prod = \_ -> do
+      -- Return full month interval for last month
+      let lastMonth = cycleNth TG.Month (-1)
+      start <- intersect (dayOfMonth 1) lastMonth
+      end <- Just $ cycleNthAfter True TG.Day (-1) $ cycleNth TG.Month 0
+      Token Time <$> interval TTime.Closed start end
   }
 
 -- "bulan ini" (this month) - returns date range
@@ -487,7 +503,26 @@ ruleBulanIni = Rule
       in Token Time <$> interval TTime.Closed (cycleNth TG.Month 0) end
   }
 
--- "tahun depan" (next year)
+-- "tahun lalu" (last year) - returns full year interval
+ruleTahunLalu :: Rule
+ruleTahunLalu = Rule
+  { name = "tahun lalu"
+  , pattern =
+    [ regex "tahun"
+    , regex "lalu"
+    ]
+  , prod = \_ -> do
+      -- Get last year
+      let lastYear = cycleNth TG.Year (-1)
+      -- Start: January 1 of last year (need to do in two steps since intersect returns Maybe)
+      janLastYear <- intersect (month 1) lastYear
+      start <- intersect (dayOfMonth 1) janLastYear
+      -- End: December 31 of last year (last day of last year)
+      end <- Just $ cycleLastOf TG.Day lastYear
+      Token Time <$> interval TTime.Closed start end
+  }
+
+-- "tahun depan" (next year) - returns full year interval
 ruleTahunDepan :: Rule
 ruleTahunDepan = Rule
   { name = "tahun depan"
@@ -495,7 +530,15 @@ ruleTahunDepan = Rule
     [ regex "tahun"
     , regex "depan"
     ]
-  , prod = \_ -> tt $ cycleNth TG.Year 1
+  , prod = \_ -> do
+      -- Get next year
+      let nextYear = cycleNth TG.Year 1
+      -- Start: January 1 of next year (need to do in two steps since intersect returns Maybe)
+      janNextYear <- intersect (month 1) nextYear
+      start <- intersect (dayOfMonth 1) janNextYear
+      -- End: December 31 of next year (last day of next year)
+      end <- Just $ cycleLastOf TG.Day nextYear
+      Token Time <$> interval TTime.Closed start end
   }
 
 -- "akhir minggu" (weekend)
@@ -565,6 +608,77 @@ ruleSejakAwalBulan = Rule
     ]
   , prod = \_ -> do
       start <- intersect (dayOfMonth 1) $ cycleNth TG.Month 0
+      Token Time <$> interval TTime.Closed start now
+  }
+
+-- "sejak bulan lalu" (since last month) - from first day of last month until now
+-- Example: "sejak bulan lalu"
+ruleSejakBulanLalu :: Rule
+ruleSejakBulanLalu = Rule
+  { name = "sejak bulan lalu"
+  , pattern =
+    [ regex "sejak"
+    , regex "bulan"
+    , regex "lalu"
+    ]
+  , prod = \_ -> do
+      -- Start: first day of last month
+      let lastMonth = cycleNth TG.Month (-1)
+      start <- intersect (dayOfMonth 1) lastMonth
+      -- End: now (today)
+      Token Time <$> interval TTime.Closed start now
+  }
+
+-- "sejak minggu lalu" (since last week) - from Monday of last week until now
+-- Example: "sejak minggu lalu"
+ruleSejakMingguLalu :: Rule
+ruleSejakMingguLalu = Rule
+  { name = "sejak minggu lalu"
+  , pattern =
+    [ regex "sejak"
+    , regex "minggu"
+    , regex "lalu"
+    ]
+  , prod = \_ -> do
+      -- Start: Monday of last week
+      let lastWeek = cycleNth TG.Week (-1)
+      -- End: now (today)
+      Token Time <$> interval TTime.Closed lastWeek now
+  }
+
+-- "sejak minggu ini" (since this week) - from Monday of this week until now
+-- Example: "sejak minggu ini"
+ruleSejakMingguIni :: Rule
+ruleSejakMingguIni = Rule
+  { name = "sejak minggu ini"
+  , pattern =
+    [ regex "sejak"
+    , regex "minggu"
+    , regex "ini"
+    ]
+  , prod = \_ -> do
+      -- Start: Monday of this week
+      let thisWeek = cycleNth TG.Week 0
+      -- End: now (today)
+      Token Time <$> interval TTime.Closed thisWeek now
+  }
+
+-- "sejak tahun lalu" (since last year) - from January 1 of last year until now
+-- Example: "sejak tahun lalu"
+ruleSejakTahunLalu :: Rule
+ruleSejakTahunLalu = Rule
+  { name = "sejak tahun lalu"
+  , pattern =
+    [ regex "sejak"
+    , regex "tahun"
+    , regex "lalu"
+    ]
+  , prod = \_ -> do
+      -- Start: January 1 of last year (need to do in two steps since intersect returns Maybe)
+      let lastYear = cycleNth TG.Year (-1)
+      janLastYear <- intersect (month 1) lastYear
+      start <- intersect (dayOfMonth 1) janLastYear
+      -- End: now (today)
       Token Time <$> interval TTime.Closed start now
   }
 
@@ -1152,8 +1266,13 @@ rules =
   , ruleBulanIniSampaiSekarang
   , ruleDariAwalBulanSampaiSekarang
   , ruleSejakAwalBulan
+  , ruleSejakBulanLalu
+  , ruleSejakMingguLalu
+  , ruleSejakMingguIni
+  , ruleSejakTahunLalu
   , ruleSelamaBulanTahun
   , ruleSelamaBulan
+  , ruleTahunLalu
   , ruleTahunDepan
   , ruleAkhirMinggu
   , ruleAwalBulan

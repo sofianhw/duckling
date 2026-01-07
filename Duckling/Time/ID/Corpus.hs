@@ -175,23 +175,30 @@ allExamples = concat
              ]
   
   -- Relative cycles
-  , examples (datetime (2013, 2, 19, 0, 0, 0) Day)
+  -- "minggu depan" and "minggu lalu" now return full week intervals
+  , examples (datetimeInterval ((2013, 2, 18, 0, 0, 0), (2013, 2, 25, 0, 0, 0)) Day)
              [ "minggu depan"
+             , "minggu kemudian"
              ]
-  , examples (datetime (2013, 2, 5, 0, 0, 0) Day)
+  , examples (datetimeInterval ((2013, 2, 4, 0, 0, 0), (2013, 2, 11, 0, 0, 0)) Day)
              [ "minggu lalu"
              ]
   , examples (datetime (2013, 3, 1, 0, 0, 0) Day)
              [ "bulan depan"
              ]
-  , examples (datetime (2013, 1, 1, 0, 0, 0) Day)
+  -- "bulan lalu" and "bulan depan" now return full month intervals
+  , examples (datetimeInterval ((2013, 1, 1, 0, 0, 0), (2013, 2, 1, 0, 0, 0)) Day)
              [ "bulan lalu"
              ]
-  , examples (datetime (2014, 1, 1, 0, 0, 0) Day)
-             [ "tahun depan"
+  , examples (datetimeInterval ((2013, 3, 1, 0, 0, 0), (2013, 4, 1, 0, 0, 0)) Day)
+             [ "bulan depan"
              ]
-  , examples (datetime (2012, 1, 1, 0, 0, 0) Day)
+  -- "tahun lalu" and "tahun depan" now return full year intervals
+  , examples (datetimeInterval ((2012, 1, 1, 0, 0, 0), (2013, 1, 1, 0, 0, 0)) Day)
              [ "tahun lalu"
+             ]
+  , examples (datetimeInterval ((2014, 1, 1, 0, 0, 0), (2015, 1, 1, 0, 0, 0)) Day)
+             [ "tahun depan"
              ]
   
   -- Relative dates with numbers
@@ -353,6 +360,24 @@ allExamples = concat
   -- Next month: Mar 1 to Apr 1 (exclusive end, so Mar 1-31)
   , examples (datetimeInterval ((2013, 3, 1, 0, 0, 0), (2013, 4, 1, 0, 0, 0)) Day)
              [ "selama bulan depan"
+             ]
+  -- "sejak" (since) - from start of period until now
+  -- Note: These use "now" which is the reference time (2013-02-12 04:30:00)
+  -- "sejak bulan lalu" - from Jan 1, 2013 until now (Feb 12, 2013)
+  , examples (datetimeInterval ((2013, 1, 1, 0, 0, 0), (2013, 2, 12, 4, 30, 0)) Second)
+             [ "sejak bulan lalu"
+             ]
+  -- "sejak minggu lalu" - from Monday of last week (Feb 4) until now (Feb 12)
+  , examples (datetimeInterval ((2013, 2, 4, 0, 0, 0), (2013, 2, 12, 4, 30, 0)) Second)
+             [ "sejak minggu lalu"
+             ]
+  -- "sejak minggu ini" - from Monday of this week (Feb 11) until now (Feb 12)
+  , examples (datetimeInterval ((2013, 2, 11, 0, 0, 0), (2013, 2, 12, 4, 30, 0)) Second)
+             [ "sejak minggu ini"
+             ]
+  -- "sejak tahun lalu" - from Jan 1, 2012 until now (Feb 12, 2013)
+  , examples (datetimeInterval ((2012, 1, 1, 0, 0, 0), (2013, 2, 12, 4, 30, 0)) Second)
+             [ "sejak tahun lalu"
              ]
   
   -- Holidays
